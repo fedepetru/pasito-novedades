@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pasito — Novedades</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#f0f4f8;color:#1a202c;min-height:100vh}
+
+    header{background:linear-gradient(135deg,#6c63ff 0%,#4ecdc4 100%);color:white;padding:28px 20px 22px;text-align:center}
+    header h1{font-size:2rem;font-weight:800;letter-spacing:-.5px}
+    header p{margin-top:6px;opacity:.9;font-size:.95rem}
+    .badge{display:inline-block;background:rgba(255,255,255,.25);border-radius:999px;padding:4px 14px;font-size:.8rem;margin-top:10px;font-weight:600}
+
+    .container{max-width:960px;margin:0 auto;padding:24px 16px}
+
+    /* stats */
+    .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:24px}
+    .stat-card{background:white;border-radius:14px;padding:18px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.07)}
+    .stat-card .number{font-size:2rem;font-weight:800;color:#6c63ff}
+    .stat-card .label{font-size:.78rem;color:#718096;margin-top:4px}
+
+    /* tabs */
+    .tab-bar{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap}
+    .tab{padding:8px 20px;border-radius:999px;border:2px solid #e2e8f0;background:white;cursor:pointer;font-size:.85rem;font-weight:600;color:#718096;transition:all .15s}
+    .tab.active{background:#6c63ff;border-color:#6c63ff;color:white}
+
+    /* section headers */
+    .section-header{display:flex;align-items:center;gap:10px;margin:28px 0 14px}
+    .section-header h2{font-size:1.1rem;font-weight:700}
+    .count-badge{background:#e9e6ff;color:#6c63ff;font-size:.75rem;padding:3px 10px;border-radius:999px;font-weight:700}
+
+    /* cards grid */
+    .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;margin-bottom:8px}
+
+    /* card */
+    .card{background:white;border-radius:14px;padding:16px;box-shadow:0 2px 8px rgba(0,0,0,.06);transition:transform .15s,box-shadow .15s;position:relative;border-left:4px solid #cbd5e0}
+    .card:hover{transform:translateY(-2px);box-shadow:0 6px 18px rgba(0,0,0,.1)}
+    .card.es-nuevo{border-left-color:#6c63ff}
+    .card.es-local{border-left-color:#4ecdc4}
+
+    .card-tags{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+    .tag{display:inline-block;font-size:.68rem;font-weight:700;padding:3px 9px;border-radius:999px;text-transform:uppercase;letter-spacing:.3px}
+    .tag-nuevo-unico{background:#e6fff4;color:#00a854}       /* verde: categoría nueva */
+    .tag-nuevo-similar{background:#fff0f3;color:#ff4757}     /* rojo: similar a existentes */
+    .tag-oferta{background:#fff8e6;color:#f59e0b}            /* amarillo: precio bajo */
+    .tag-local{background:#e6f9f8;color:#0e9f8e}
+
+    .card-nombre{font-weight:700;font-size:.95rem;margin-bottom:4px}
+    .card-desc{font-size:.82rem;color:#718096;line-height:1.45;margin-bottom:8px}
+    .card-cat{font-size:.78rem;color:#a0aec0}
+
+    .pasitos-pill{display:inline-flex;align-items:center;gap:5px;background:#f3f0ff;border-radius:999px;padding:4px 12px;font-size:.82rem;font-weight:700;color:#6c63ff;margin-top:6px}
+    .pasitos-pill span{font-size:1rem}
+
+    /* fecha del scan */
+    .scan-date{font-size:.72rem;color:#cbd5e0;margin-top:8px}
+
+    /* historial */
+    .hist-item{background:white;border-radius:12px;padding:14px 18px;margin-bottom:10px;box-shadow:0 2px 6px rgba(0,0,0,.05)}
+    .hist-item .fecha{font-weight:700;font-size:.9rem;margin-bottom:4px}
+    .hist-item .detalle{font-size:.82rem;color:#718096}
+
+    /* botón */
+    .btn-center{text-align:center;margin-bottom:24px}
+    .update-btn{display:inline-block;background:#6c63ff;color:white;border:none;border-radius:999px;padding:11px 28px;font-size:.9rem;font-weight:600;cursor:pointer;transition:background .2s}
+    .update-btn:hover{background:#5a52d5}
+
+    .empty{color:#a0aec0;text-align:center;padding:36px;font-size:.9rem;grid-column:1/-1}
+
+    #loading{display:none;text-align:center;padding:48px;color:#718096}
+    .spinner{width:36px;height:36px;border:4px solid #e2e8f0;border-top-color:#6c63ff;border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 14px}
+    @keyframes spin{to{transform:rotate(360deg)}}
+
+    .divider{height:1px;background:#e2e8f0;margin:24px 0}
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>👟 Pasito Novedades</h1>
+  <p>Seguimiento automático de locales y recompensas</p>
+  <div class="badge" id="ultima-actualizacion">Cargando...</div>
+</header>
+
+<div class="container">
+
+  <div class="stats">
+    <div class="stat-card"><div class="number" id="stat-locales">—</div><div class="label">Locales totales</div></div>
+    <div class="stat-card"><div class="number" id="stat-recompensas">—</div><div class="label">Recompensas totales</div></div>
+    <div class="stat-card"><div class="number" id="stat-nuevos-locales">—</div><div class="label">Locales nuevos hoy</div></div>
+    <div class="stat-card"><div class="number" id="stat-nuevas-rec">—</div><div class="label">Recompensas nuevas hoy</div></div>
+    <div class="stat-card"><div class="number" id="stat-scans">—</div><div class="label">Escaneos realizados</div></div>
+  </div>
+
+  <div class="btn-center">
+    <button class="update-btn" onclick="recargar()">🔄 Actualizar ahora</button>
+  </div>
+
+  <div id="loading"><div class="spinner"></div>Escaneando Pasito...</div>
+
+  <div id="content">
+    <div class="tab-bar">
+      <button class="tab active" onclick="showTab('novedades',this)">🆕 Novedades</button>
+      <button class="tab" onclick="showTab('todos-rec',this)">🎁 Todas las recompensas</button>
+      <button class="tab" onclick="showTab('todos-loc',this)">🏪 Todos los locales</button>
+      <button class="tab" onclick="showTab('historial',this)">📅 Historial</button>
+    </div>
+
+    <!-- NOVEDADES -->
+    <div id="tab-novedades">
+
+      <div class="section-header">
+        <h2>🏪 Locales nuevos</h2>
+        <span class="count-badge" id="cnt-nuevos-locales">0</span>
+      </div>
+      <div class="cards" id="cards-nuevos-locales">
+        <div class="empty">Sin locales nuevos en el último escaneo.</div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="section-header">
+        <h2>🎁 Recompensas nuevas</h2>
+        <span class="count-badge" id="cnt-nuevas-rec">0</span>
+      </div>
+      <div class="cards" id="cards-nuevas-rec">
+        <div class="empty">Sin recompensas nuevas en el último escaneo.</div>
+      </div>
+    </div>
+
+    <!-- TODAS LAS RECOMPENSAS -->
+    <div id="tab-todos-rec" style="display:none">
+      <div class="section-header"><h2>🎁 Todas las recompensas</h2><span class="count-badge" id="cnt-todas-rec">0</span></div>
+      <div class="cards" id="cards-todos-rec"></div>
+    </div>
+
+    <!-- TODOS LOS LOCALES -->
+    <div id="tab-todos-loc" style="display:none">
+      <div class="section-header"><h2>🏪 Todos los locales</h2><span class="count-badge" id="cnt-todos-loc">0</span></div>
+      <div class="cards" id="cards-todos-loc"></div>
+    </div>
+
+    <!-- HISTORIAL -->
+    <div id="tab-historial" style="display:none">
+      <div class="section-header"><h2>📅 Historial de escaneos</h2></div>
+      <div id="historial-list"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── análisis de novedad y oferta ─────────────────────────────────────────────
+
+const CATEGORIAS_COMUNES = [
+  'café','cafe','coffee','cortado','latte','capuccino','espresso','americano',
+  'medialuna','medialunas','factura','facturas','croissant',
+  'pizza','empanada','empanadas','milanesa','milanesas',
+  'helado','helados','cucurucho',
+  'cerveza','gin','fernet','vino','copa',
+  'descuento','off','%'
+];
+
+function esNovedad(nombre) {
+  const n = nombre.toLowerCase();
+  return !CATEGORIAS_COMUNES.some(k => n.includes(k));
+}
+
+function promedioCategoria(recompensas, nombreRef) {
+  // Detectar qué categoría de producto es por keywords
+  const keywords = detectarKeywords(nombreRef);
+  if (!keywords.length) return null;
+  const similares = recompensas.filter(r =>
+    r.pasitos && keywords.some(k => (r.nombre||'').toLowerCase().includes(k))
+  );
+  if (similares.length < 2) return null;
+  return similares.reduce((s,r) => s + r.pasitos, 0) / similares.length;
+}
+
+function detectarKeywords(nombre) {
+  const n = nombre.toLowerCase();
+  const grupos = [
+    ['café','cafe','latte','cortado','flat','espresso','americano','capuchino'],
+    ['medialuna','factura','croissant','medialunas'],
+    ['pizza'],['empanada','empanadas'],
+    ['milanesa','milanesas'],['helado','helados'],
+    ['cerveza'],['vino','copa'],['gin','tónica'],
+    ['descuento','off'],['libro'],['clase','taller'],
+  ];
+  for (const g of grupos) if (g.some(k => n.includes(k))) return g;
+  return [];
+}
+
+function esOferta(rec, todasRec) {
+  if (!rec.pasitos) return false;
+  const avg = promedioCategoria(todasRec, rec.nombre);
+  if (!avg) return false;
+  return rec.pasitos < avg * 0.55; // más del 45% más barato que el promedio
+}
+
+// ── render ───────────────────────────────────────────────────────────────────
+
+function renderLocal(local, esNuevo) {
+  const tags = [];
+  if (esNuevo) tags.push('<span class="tag tag-local">NUEVO LOCAL</span>');
+  return `
+    <div class="card ${esNuevo ? 'es-local' : ''}">
+      <div class="card-tags">${tags.join('')}</div>
+      <div class="card-nombre">${escHtml(local.nombre)}</div>
+      ${local.descripcion ? `<div class="card-desc">${escHtml(local.descripcion)}</div>` : ''}
+      ${local.categoria   ? `<div class="card-cat">${escHtml(local.categoria)}</div>` : ''}
+    </div>`;
+}
+
+function renderRecompensa(rec, esNuevo, todasRec) {
+  const tags = [];
+  if (esNuevo) {
+    if (esNovedad(rec.nombre))
+      tags.push('<span class="tag tag-nuevo-unico">NUEVO ✨</span>');
+    else
+      tags.push('<span class="tag tag-nuevo-similar">NUEVO</span>');
+    if (esOferta(rec, todasRec))
+      tags.push('<span class="tag tag-oferta">OFERTA 🔥</span>');
+  }
+
+  // local puede ser string o {nombre:...}
+  const localNombre = typeof rec.local === 'object' ? rec.local?.nombre : rec.local;
+
+  const pasitosHtml = rec.pasitos
+    ? `<div class="pasitos-pill"><span>👟</span>${rec.pasitos} pasitos</div>`
+    : '';
+
+  return `
+    <div class="card ${esNuevo ? 'es-nuevo' : ''}">
+      <div class="card-tags">${tags.join('')}</div>
+      <div class="card-nombre">${escHtml(rec.nombre)}</div>
+      ${localNombre ? `<div class="card-desc">📍 ${escHtml(localNombre)}</div>` : ''}
+      ${pasitosHtml}
+    </div>`;
+}
+
+function escHtml(s) {
+  return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function fillCards(containerId, html) {
+  const el = document.getElementById(containerId);
+  el.innerHTML = html || '<div class="empty">Sin datos aún.</div>';
+}
+
+// ── tabs ─────────────────────────────────────────────────────────────────────
+
+function showTab(name, btn) {
+  ['novedades','todos-rec','todos-loc','historial'].forEach(t => {
+    document.getElementById('tab-' + t).style.display = 'none';
+  });
+  document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).style.display = '';
+  btn.classList.add('active');
+}
+
+// ── carga de datos ────────────────────────────────────────────────────────────
+
+async function cargarDatos() {
+  try {
+    const res = await fetch('data.json?t=' + Date.now());
+    if (!res.ok) throw new Error();
+    const d = await res.json();
+
+    const locales     = d.locales     || [];
+    const recompensas = d.recompensas || [];
+    const acts        = d.actualizaciones || [];
+
+    // Última actualización ordenada (más reciente primero)
+    const actOrdenadas = [...acts].sort((a,b) => b.fecha.localeCompare(a.fecha));
+    const ultima = actOrdenadas[0] || {};
+
+    const nuevosLocalesNombres = new Set((ultima.nuevos_locales||[]).map(l=>l.nombre));
+    const nuevasRecNombres     = new Set((ultima.nuevas_recompensas||[]).map(r=>r.nombre));
+
+    // Stats
+    document.getElementById('ultima-actualizacion').textContent =
+      d.ultima_actualizacion
+        ? 'Última actualización: ' + new Date(d.ultima_actualizacion).toLocaleString('es-AR')
+        : 'Sin datos';
+    document.getElementById('stat-locales').textContent     = locales.length;
+    document.getElementById('stat-recompensas').textContent = recompensas.length;
+    document.getElementById('stat-nuevos-locales').textContent = nuevosLocalesNombres.size;
+    document.getElementById('stat-nuevas-rec').textContent  = nuevasRecNombres.size;
+    document.getElementById('stat-scans').textContent       = acts.length;
+
+    // Novedades: locales nuevos
+    const nuevosLocales = locales.filter(l => nuevosLocalesNombres.has(l.nombre));
+    document.getElementById('cnt-nuevos-locales').textContent = nuevosLocales.length;
+    fillCards('cards-nuevos-locales', nuevosLocales.length
+      ? nuevosLocales.map(l => renderLocal(l, true)).join('')
+      : '<div class="empty">Sin locales nuevos en el último escaneo.</div>');
+
+    // Novedades: recompensas nuevas (ordenadas: sin pasitos al final)
+    const nuevasRec = recompensas
+      .filter(r => nuevasRecNombres.has(r.nombre))
+      .sort((a,b) => (b.pasitos||0) - (a.pasitos||0));
+    document.getElementById('cnt-nuevas-rec').textContent = nuevasRec.length;
+    fillCards('cards-nuevas-rec', nuevasRec.length
+      ? nuevasRec.map(r => renderRecompensa(r, true, recompensas)).join('')
+      : '<div class="empty">Sin recompensas nuevas en el último escaneo.</div>');
+
+    // Todas las recompensas (ordenadas por pasitos asc)
+    const todasRecOrdenadas = [...recompensas].sort((a,b) => (a.pasitos||9999) - (b.pasitos||9999));
+    document.getElementById('cnt-todas-rec').textContent = recompensas.length;
+    fillCards('cards-todos-rec', todasRecOrdenadas.map(r =>
+      renderRecompensa(r, nuevasRecNombres.has(r.nombre), recompensas)).join(''));
+
+    // Todos los locales
+    document.getElementById('cnt-todos-loc').textContent = locales.length;
+    fillCards('cards-todos-loc', locales.map(l =>
+      renderLocal(l, nuevosLocalesNombres.has(l.nombre))).join(''));
+
+    // Historial (más reciente primero)
+    const histEl = document.getElementById('historial-list');
+    if (!actOrdenadas.length) {
+      histEl.innerHTML = '<div class="empty">Sin historial aún.</div>';
+    } else {
+      histEl.innerHTML = actOrdenadas.map(act => {
+        const fecha = new Date(act.fecha).toLocaleString('es-AR');
+        const nL = (act.nuevos_locales||[]).length;
+        const nR = (act.nuevas_recompensas||[]).length;
+        return `<div class="hist-item">
+          <div class="fecha">📅 ${fecha}</div>
+          <div class="detalle">+${nL} locales nuevos · +${nR} recompensas nuevas</div>
+        </div>`;
+      }).join('');
+    }
+
+  } catch(e) {
+    document.getElementById('content').innerHTML =
+      '<div class="empty"><strong>Sin datos todavía.</strong><br><br>Hacé click en "Actualizar ahora" para escanear Pasito.</div>';
+  }
+}
+
+async function recargar() {
+  document.getElementById('loading').style.display  = 'block';
+  document.getElementById('content').style.display  = 'none';
+  await new Promise(r => setTimeout(r, 500));
+  await cargarDatos();
+  document.getElementById('loading').style.display  = 'none';
+  document.getElementById('content').style.display  = '';
+}
+
+cargarDatos();
+setInterval(cargarDatos, 5 * 60 * 1000);
+</script>
+</body>
+</html>
